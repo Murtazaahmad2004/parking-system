@@ -27,71 +27,71 @@ const container = {
   },
 };
 
-function BookingForm () {
+function BookingForm() {
   const navigate = useNavigate();
-    const [open, setOpen] = useState(false);
-    const [user, setUser] = useState("");
-    const [email, setEmail] = useState("");
-    const [userid, setUserid] = useState("");
-    const [bookingid, setBookingid] = useState("");
-    const [name, setName] = useState("");
-    const [cnic, setCnic] = useState("");
-    const [phonenumber, setPhonenumber] = useState("");
-    const [vehiclenumber, setVehiclenumber] = useState("");
-    const [vehicletype, setVehicletype] = useState("");
-    const [slot, setSlot] = useState("");
-    const [slots, setSlots] = useState([]);
-    const [area, setArea] = useState("");
-    const [plan, setPlan] = useState("");
-    const [plans, setPlans] = useState([]);
-    const [price, setPrice] = useState("");
-    const [bookingdate, setBookingdate] = useState("");
-    const [enddate, setEnddate] = useState("");
-    const [bookingtime, setBookingtime] = useState("");
-    const [endtime, setEndtime] = useState("");
+  const [open, setOpen] = useState(false);
+  const [user, setUser] = useState("");
+  const [email, setEmail] = useState("");
+  const [userid, setUserid] = useState("");
+  const [bookingid, setBookingid] = useState("");
+  const [name, setName] = useState("");
+  const [cnic, setCnic] = useState("");
+  const [phonenumber, setPhonenumber] = useState("");
+  const [vehiclenumber, setVehiclenumber] = useState("");
+  const [vehicletype, setVehicletype] = useState("");
+  const [slot, setSlot] = useState("");
+  const [slots, setSlots] = useState([]);
+  const [area, setArea] = useState("");
+  const [plan, setPlan] = useState("");
+  const [plans, setPlans] = useState([]);
+  const [price, setPrice] = useState("");
+  const [bookingdate, setBookingdate] = useState("");
+  const [enddate, setEnddate] = useState("");
+  const [bookingtime, setBookingtime] = useState("");
+  const [endtime, setEndtime] = useState("");
 
-const generateBookId = () => {
-  const book = "PF-2026-BOOK";
+  const generateBookId = () => {
+    const book = "PF-2026-BOOK";
 
-  const randomId = Math.floor(1000 + Math.random() * 9000);
-  const bookingId = `${book}-${randomId}`;
+    const randomId = Math.floor(1000 + Math.random() * 9000);
+    const bookingId = `${book}-${randomId}`;
 
-  console.log(bookingId);
+    console.log(bookingId);
 
-  setBookingid(bookingId);
-};
+    setBookingid(bookingId);
+  };
 
   useEffect(() => {
-  document.title = "Booking Form - ParkFlow";
+    document.title = "Booking Form - ParkFlow";
 
-  axios
-    .get("http://localhost:3001/plans")
-    .then((result) => {
-      console.log(result.data);
-      setPlans(result.data);
-    })
-    .catch((err) => console.log(err));
-}, []);
+    axios
+      .get("http://localhost:3001/plans")
+      .then((result) => {
+        console.log(result.data);
+        setPlans(result.data);
+      })
+      .catch((err) => console.log(err));
+  }, []);
 
   useEffect(() => {
     axios
-    .get("http://localhost:3001/slots")
-    .then((result) => {
-      console.log(result.data);
-      setSlots(result.data);
-    })
-    .catch((err) => console.log(err));
+      .get("http://localhost:3001/slots")
+      .then((result) => {
+        console.log(result.data);
+        setSlots(result.data);
+      })
+      .catch((err) => console.log(err));
     generateBookId();
   }, []);
 
-    useEffect(() => {
-      const loggedInUser = JSON.parse(sessionStorage.getItem("user"));
-  
-      if(loggedInUser) {
-        setUser(loggedInUser);
-        setUserid(loggedInUser.userid);
-      }
-    }, []);
+  useEffect(() => {
+    const loggedInUser = JSON.parse(sessionStorage.getItem("user"));
+
+    if (loggedInUser) {
+      setUser(loggedInUser);
+      setUserid(loggedInUser.userid);
+    }
+  }, []);
 
   const handleLogout = () => {
     sessionStorage.removeItem("isLoggedIn");
@@ -115,25 +115,26 @@ const generateBookId = () => {
 
     //plans array me us object ko dhoondo jiska planname user ke selected plan ke barabar ho.
     const selected = plans.find((plan) => plan.planname === selectedPlan);
-    if(!selected) return;
+    if (!selected) return;
 
     setPrice(selected.price);
 
     const today = new Date();
     setBookingdate(today.toISOString().split("T")[0]);
 
-    const CurrentTime = 
-    String(today.getHours()).padStart(2, "0") + 
-    ":" + 
-    String(today.getMinutes()).padStart(2, "0");
+    const CurrentTime =
+      String(today.getHours()).padStart(2, "0") +
+      ":" +
+      String(today.getMinutes()).padStart(2, "0");
 
     setBookingtime(CurrentTime);
 
-    const end = new Date (today);
+    const end = new Date(today);
 
-    if(selected.durationtype === "month") {
+    if (selected.durationtype === "month") {
       end.setMonth(end.getMonth() + selected.duration);
-    } if(selected.durationtype === "year") {
+    }
+    if (selected.durationtype === "year") {
       end.setFullYear(end.getFullYear() + selected.duration);
     }
     setEnddate(end.toISOString().split("T")[0]);
@@ -159,31 +160,31 @@ const generateBookId = () => {
       !bookingdate ||
       !enddate ||
       !bookingtime ||
-      !endtime 
-    ) 
-    return;
+      !endtime
+    )
+      return;
 
-      const result = {
-        userid,
-        bookingid,
-        name,
-        email,
-        cnic,
-        phonenumber,
-        vehiclenumber,
-        vehicletype,
-        slot,
-        area,
-        plan,
-        price,
-        bookingdate,
-        enddate,
-        bookingtime,
-        endtime,
-      };
+    const result = {
+      userid,
+      bookingid,
+      name,
+      email,
+      cnic,
+      phonenumber,
+      vehiclenumber,
+      vehicletype,
+      slot,
+      area,
+      plan,
+      price,
+      bookingdate,
+      enddate,
+      bookingtime,
+      endtime,
+    };
 
-      sessionStorage.setItem("bookingData", JSON.stringify(result));
-      navigate("/paymentscreen");
+    sessionStorage.setItem("bookingData", JSON.stringify(result));
+    navigate("/paymentscreen");
   };
 
   return (
@@ -200,51 +201,51 @@ const generateBookId = () => {
           </div>
           <h1>ParkFlow</h1>
 
-           {/* DROPDOWN */}
-                    <div
-                      className="dropdown-container"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setOpen(!open);
-                      }}
-                    >
-                      <span className="user-name">{user.name}</span>
-                      <FaChevronDown className="icon" />
-                      {open && (
-                        <div className="dropdown-menu">
-                          <div className="dropdown-header">
-                            <div className="dropdown-logo">
-                              <img src="/logo.png" alt="Logo" />
-                            </div>
-          
-                            <div className="dropdown-user-info">
-                              <h3>{user.name}</h3>
-                              <p>{user.email}</p>
-                              <p>{user.userid}</p>
-                            </div>
-                          </div>
-                          <hr />
-                          <motion.div
-                          variants={fadeUp}
-                          whileHover={{ x: 10 }} // Hover karne pe element 10px right move karega
-                        >
-                          <NavLink
-                            to="/loginsignup"
-                            className="user-nav-item"
-                            onClick={() => {
-                              scrollToTop();
-                              handleLogout();
-                            }}
-                          >
-                            <li>
-                              <FaSignOutAlt className="icon" />
-                              Logout
-                            </li>
-                          </NavLink>
-                        </motion.div>
-                        </div>
-                      )}
-                    </div>
+          {/* DROPDOWN */}
+          <div
+            className="dropdown-container"
+            onClick={(e) => {
+              e.stopPropagation();
+              setOpen(!open);
+            }}
+          >
+            <span className="user-name">{user.name}</span>
+            <FaChevronDown className="icon" />
+            {open && (
+              <div className="dropdown-menu">
+                <div className="dropdown-header">
+                  <div className="dropdown-logo">
+                    <img src="/logo.png" alt="Logo" />
+                  </div>
+
+                  <div className="dropdown-user-info">
+                    <h3>{user.name}</h3>
+                    <p>{user.email}</p>
+                    <p>{user.userid}</p>
+                  </div>
+                </div>
+                <hr />
+                <motion.div
+                  variants={fadeUp}
+                  whileHover={{ x: 10 }} // Hover karne pe element 10px right move karega
+                >
+                  <NavLink
+                    to="/loginsignup"
+                    className="user-nav-item"
+                    onClick={() => {
+                      scrollToTop();
+                      handleLogout();
+                    }}
+                  >
+                    <li>
+                      <FaSignOutAlt className="icon" />
+                      Logout
+                    </li>
+                  </NavLink>
+                </motion.div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
       {/* sidebar */}
@@ -287,6 +288,18 @@ const generateBookId = () => {
                   <li>
                     <FaCalendarCheck className="icon" />
                     My Booking
+                  </li>
+                </NavLink>
+              </motion.div>
+
+              <motion.div
+                variants={fadeUp}
+                whileHover={{ x: 10 }} // Hover karne pe element 10px right move karega
+              >
+                <NavLink to="/paymentscreen" className="user-nav-item">
+                  <li>
+                    <FaCalendarCheck className="icon" />
+                    payment
                   </li>
                 </NavLink>
               </motion.div>
@@ -430,9 +443,9 @@ const generateBookId = () => {
                   required
                 >
                   <option value="">Select Plan</option>
-                    {plans.map((plan) => (
-                        <option key={plan._id} value={plan.planname}>
-                        {plan.planname}
+                  {plans.map((plan) => (
+                    <option key={plan._id} value={plan.planname}>
+                      {plan.planname}
                     </option>
                   ))}
                 </select>
@@ -469,22 +482,12 @@ const generateBookId = () => {
                 />
 
                 <label>Booking Time:</label>
-                <input 
-                type="time" 
-                value={bookingtime} 
-                readOnly 
-                required
-                />
+                <input type="time" value={bookingtime} readOnly required />
 
                 <label>Ending Time:</label>
-                <input 
-                type="time" 
-                value={endtime} 
-                readOnly 
-                required
-                />
+                <input type="time" value={endtime} readOnly required />
 
-                <button type="submit" className="pay-subscribe-btn" >
+                <button type="submit" className="pay-subscribe-btn">
                   <FaCheck className="pay-icon" />
                   Confirm Booking
                 </button>
@@ -559,5 +562,5 @@ const generateBookId = () => {
       </footer>
     </>
   );
-};
+}
 export default BookingForm;

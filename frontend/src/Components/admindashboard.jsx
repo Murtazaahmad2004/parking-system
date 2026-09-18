@@ -97,7 +97,7 @@ function AdminDashboard() {
     });
 
   useEffect(() => {
-    document.title = "Admin Dashboard - ParkFlow";
+    document.title = "Admin || Dashboard - ParkFlow";
 
     axios
       .get("http://localhost:3001/api/slots/count")

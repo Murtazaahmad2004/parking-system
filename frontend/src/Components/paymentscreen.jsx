@@ -66,27 +66,40 @@ function PaymentScreen() {
   };
   console.log(bookingData);
 
-  const [plan, setPlan] = useState([]);
+const [plan, setPlan] = useState([]);
+
+useEffect(() => {
+  axios
+    .get("http://localhost:3001/plans")
+    .then((result) => {
+      setPlan(result.data);
+    })
+    .catch((err) => {
+      console.log(err);
+    });
+}, []);
+
+const loggedInUser = JSON.parse(
+  sessionStorage.getItem("bookingData") || "null"
+);
+
+const userPlan = plan.filter(
+  (item) => item.planname === loggedInUser?.plan
+);
+
+console.log("Logged-in User:", loggedInUser);
+console.log("User Plan:", userPlan);
 
   useEffect(() => {
-    axios
-      .get("http://localhost:3001/plans")
-      .then((result) => {
-        setPlan(result.data);
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  }, []);
-
-  useEffect(() => {
-    document.title = "Payment Page";
+    document.title = "Payment Page - ParkFlow";
   }, []);
 
   return (
     <>
       <div className="payment-form-section">
-        {/* LEFT — CARD FORM */}
+        {/* =====================================
+            LEFT — CARD FORM
+        ====================================== */}
         <motion.div
           className="payment-form-left"
           variants={fadeUp}
@@ -99,58 +112,85 @@ function PaymentScreen() {
               <FaCcVisa className="card-icon visa" />
               <FaCcMastercard className="card-icon mastercard" />
             </div>
+
             <div className="pay-inputs">
+              {/* Card Number */}
               <div className="pay-input-group">
                 <label>Card Number</label>
-                <div
-                  className="pay-input"
-                  onChange={(e) => setCardNumber(e.target.value)}
-                >
+
+                <div className="pay-input">
                   <FaCreditCard className="pay-icon" />
-                  <input type="number" placeholder="e.g. 1234 5678 9012 3456" />
+
+                  <input
+                    type="text"
+                    placeholder="e.g. 1234 5678 9012 3456"
+                    value={cardNumber}
+                    onChange={(e) => setCardNumber(e.target.value)}
+                  />
                 </div>
               </div>
-              <div
-                className="pay-input-group"
-                onChange={(e) => setCardNumber(e.target.value)}
-              >
+
+              {/* CVV */}
+              <div className="pay-input-group">
                 <label>CVV Number</label>
+
                 <div className="pay-input">
                   <FaLock className="pay-icon" />
-                  <input type="number" placeholder="e.g. 123" />
+
+                  <input
+                    type="password"
+                    placeholder="e.g. 123"
+                    value={cvvNumber}
+                    onChange={(e) => setCvvNumber(e.target.value)}
+                  />
                 </div>
               </div>
-              <div
-                className="pay-input-group"
-                onChange={(e) => setCvvNumber(e.target.value)}
-              >
+
+              {/* Expiry Month */}
+              <div className="pay-input-group">
                 <label>Expiry Month</label>
+
                 <div className="pay-input">
                   <FaCalendar className="pay-icon" />
-                  <input type="text" placeholder="MM" />
+
+                  <input
+                    type="text"
+                    placeholder="MM"
+                    value={expiryMonth}
+                    onChange={(e) => setExpiryMonth(e.target.value)}
+                  />
                 </div>
               </div>
-              <div
-                className="pay-input-group"
-                onChange={(e) => setExpiryMonth(e.target.value)}
-              >
+
+              {/* Expiry Year */}
+              <div className="pay-input-group">
                 <label>Expiry Year</label>
+
                 <div className="pay-input">
                   <FaCalendarCheck className="pay-icon" />
-                  <input type="number" placeholder="YY" />
+
+                  <input
+                    type="text"
+                    placeholder="YY"
+                    value={expiryYear}
+                    onChange={(e) => setExpiryYear(e.target.value)}
+                  />
                 </div>
               </div>
-              <div
-                className="pay-input-group"
-                onChange={(e) => setExpiryYear(e.target.value)}
-              >
+
+              {/* Card Holder Name */}
+              <div className="pay-input-group">
                 <label>Card Holder Name</label>
-                <div
-                  className="pay-input"
-                  onChange={(e) => setCardHolderName(e.target.value)}
-                >
+
+                <div className="pay-input">
                   <FaUser className="pay-icon" />
-                  <input type="text" placeholder="e.g. John Doe" />
+
+                  <input
+                    type="text"
+                    placeholder="e.g. John Doe"
+                    value={cardHolderName}
+                    onChange={(e) => setCardHolderName(e.target.value)}
+                  />
                 </div>
               </div>
             </div>
@@ -166,7 +206,7 @@ function PaymentScreen() {
           transition={{ duration: 0.8, delay: 0.2 }}
         >
           <div>
-            {plan.map((item) => (
+            {userPlan.map((item) => (
               <motion.div className="pricing-card" key={item._id}>
                 <h2>{item.planname}</h2>
 

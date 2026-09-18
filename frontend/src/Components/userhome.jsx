@@ -2,22 +2,19 @@ import {
   FaBookmark,
   FaCalendarCheck,
   FaCar,
-  FaCheck,
   FaChevronDown,
-  FaCreditCard,
-  FaHistory,
   FaParking,
   FaSignOutAlt,
 } from "react-icons/fa"; // icons import kar rahi hai.
-import { MdAlarm, MdDashboard, MdSubscriptions } from "react-icons/md"; // Material Design icons import ho rahe hain.
+import { MdDashboard, MdSubscriptions } from "react-icons/md"; // Material Design icons import ho rahe hain.
 import React, { useEffect, useState } from "react"; // page title set karne ke liye use hua hai.
 import { NavLink, useNavigate } from "react-router-dom"; // Pages ke darmiyan navigation.
 import { motion } from "framer-motion"; // Elements ko animate karta hai.
 import {
-  LineChart,
+  BarChart,
   XAxis,
   YAxis,
-  Line,
+  Bar,
   Tooltip,
   Legend,
   ResponsiveContainer,
@@ -51,6 +48,7 @@ function UserHome() {
   const [open, setOpen] = useState(false);
   const [user, setUser] = useState("");
   const [booking, setBooking] = useState("");
+  const [data, setData] =useState([])
   const [stats, setStats] = useState({
     totalSlots: 0,
     availableSlots: 0,
@@ -59,7 +57,7 @@ function UserHome() {
 
   // PAGE TITLE
   useEffect(() => {
-    document.title = "User DashBoard - ParkFlow";
+    document.title = "User Dashboard - ParkFlow";
 
     axios
       .get("http://localhost:3001/booked-slots")
@@ -82,6 +80,26 @@ function UserHome() {
 }, []);
 
   useEffect(() => {
+    const userid = sessionStorage.getItem("userid");
+    if(!userid) {
+      console.log("User ID not found in sessionStorage");
+      return;
+    }
+
+    axios
+      .get(`http://localhost:3001/booking/${userid}`)
+      .then((result) => {
+        setData([
+          {
+            plan: result.data.plan,
+            price: Number(result.data.price),
+          },
+        ]);
+      })
+      .catch((err) => console.log(err));
+  }, []);
+
+  useEffect(() => {
     const loggedInUser = JSON.parse(sessionStorage.getItem("user"));
 
     if(loggedInUser) {
@@ -96,6 +114,7 @@ function UserHome() {
 
     navigate("/loginsignup");
   };
+
   // SCROLL TOP
   const scrollToTop = () => {
     window.scrollTo({
@@ -104,15 +123,15 @@ function UserHome() {
     });
   };
   // Graphs
-  const linedata = [
-    { day: "Sunday", booked: 10, available: 40 },
-    { day: "Monday", booked: 19, available: 31 },
-    { day: "Tuesday", booked: 21, available: 29 },
-    { day: "Wednesday", booked: 29, available: 21 },
-    { day: "Thursday", booked: 33, available: 17 },
-    { day: "Friday", booked: 15, available: 35 },
-    { day: "Saturday", booked: 5, available: 45 },
-  ];
+  // const bardata = [
+  //   { month: "January", profit: 500},
+  //   { month: "February", profit: 1000},
+  //   { month: "March", profit: 1500},
+  //   { month: "April", profit: 2000},
+  //   { month: "May", profit: 3300},
+  //   { month: "June", profit: 4500},
+  //   { month: "July", profit: 5000},
+  // ];
   const donutdata = [
     { name: "available", value: 38 },
     { name: "booked", value: 7 },
@@ -314,28 +333,19 @@ function UserHome() {
             variants={scaleUp}
             whileHover={{ scale: 1.02 }} // Hover karne pe element 1.02px zoom hoga
           >
-            <h3>Parking Duration</h3>
-            <LineChart width={890} height={350} data={linedata}>
-              <XAxis dataKey="day" />
-              <YAxis domain={[0, 50]} />
+            <h3>Total Spent</h3>
+            <BarChart width={890} height={350} data={data}>
+              <XAxis dataKey="plan" />
+              <YAxis />
               <Tooltip /> {/* Hover pe popup show karta hai */}
               <Legend /> {/* Chart labels show karta hai */}
-              <Line
-                type="monotone"
-                dataKey="booked"
-                stroke="#185FA5"
-                strokeWidth={2}
-                dot={{ r: 4 }}
-              />
-              {/* monotype smooth curved line banata hai. */}
-              <Line
-                type="monotone"
-                dataKey="available"
-                stroke="#3ecf8e"
-                strokeWidth={2}
-                dot={{ r: 4 }}
-              />
-            </LineChart>
+                <Bar
+                  dataKey="price"
+                  fill="#22C55E"
+                  stroke="#22C55E"
+                  strokeWidth={2}
+                />
+            </BarChart>
           </motion.div>
 
           <motion.div
@@ -373,78 +383,6 @@ function UserHome() {
           </motion.div>
         </motion.div>
 
-        {/* NOTIFICATION + QUICK ACTIONS */}
-        <div className="dashboard-bottom-section">
-          {/* LEFT - NOTIFICATIONS */}
-          <div className="notif-card">
-            <div className="notif-card-header">
-              <h3>Notifications</h3>
-              <button className="view-all-btn">View All →</button>
-            </div>
-            <div className="notif-item">
-              <div className="notif-dot" style={{ background: "#EAF3DE" }}>
-                <FaCheck style={{ color: "#3B6D11" }} />
-              </div>
-              <div className="notif-body">
-                <p>Booking Confirmed</p>
-                <span>Slot #5 has been booked successfully.</span>
-                <div className="notif-time">2 min ago</div>
-              </div>
-            </div>
-            <div className="notif-item">
-              <div className="notif-dot" style={{ background: "#FAEEDA" }}>
-                <MdAlarm style={{ color: "#854F0B" }} />
-              </div>
-              <div className="notif-body">
-                <p>Parking Time Reminder</p>
-                <span>Your parking time expires in 30 minutes.</span>
-                <div className="notif-time">21 min ago</div>
-              </div>
-            </div>
-            <div className="notif-item">
-              <div className="notif-dot" style={{ background: "#FCEBEB" }}>
-                <FaCreditCard style={{ color: "#A32D2D" }} />
-              </div>
-              <div className="notif-body">
-                <p>Subscription Expiring</p>
-                <span>Your subscription expires on 20 June 2026.</span>
-                <div className="notif-time">1 hour ago</div>
-              </div>
-            </div>
-          </div>
-          {/* RIGHT - QUICK ACTIONS */}
-          <div className="qa-main-section">
-            <div className="notif-card-header">
-              <h3>Quick Actions</h3>
-            </div>
-            <div className="qa-grid">
-              <NavLink to="/" className="qa-card">
-                <div className="qa-icon-wrap" style={{ background: "#E6F1FB" }}>
-                  <FaParking style={{ color: "#185FA5" }} />
-                </div>
-                <span className="qa-label">Book Parking</span>
-              </NavLink>
-              <NavLink to="/" className="qa-card">
-                <div className="qa-icon-wrap" style={{ background: "#FAEEDA" }}>
-                  <FaCar style={{ color: "#854F0B" }} />
-                </div>
-                <span className="qa-label">My Vehicles</span>
-              </NavLink>
-              <NavLink to="/" className="qa-card">
-                <div className="qa-icon-wrap" style={{ background: "#EAF3DE" }}>
-                  <FaHistory style={{ color: "#3B6D11" }} />
-                </div>
-                <span className="qa-label">Parking History</span>
-              </NavLink>
-              <NavLink to="/" className="qa-card">
-                <div className="qa-icon-wrap" style={{ background: "#EEEDFE" }}>
-                  <FaCreditCard style={{ color: "#534AB7" }} />
-                </div>
-                <span className="qa-label">Payments</span>
-              </NavLink>
-            </div>
-          </div>
-        </div>
       </div>
       {/* FOOTER */}
       <footer className="login-footer">
