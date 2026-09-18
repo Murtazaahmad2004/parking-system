@@ -302,7 +302,7 @@ app.get("/booking/:userid", async (req, res) => {
 
     const bookings = await BookingForm.findOne({ userid });
 
-    if(!booking) {
+    if(!bookings) {
       return res.status(404).json({
         message: "Booking Not Found",
       });
