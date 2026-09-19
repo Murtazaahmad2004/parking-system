@@ -9,7 +9,7 @@ import {
 } from "react-icons/fa";
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { NavLink, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "./styling/paymentscreen.css";
 
@@ -30,40 +30,107 @@ function PaymentScreen() {
   const [cardHolderName, setCardHolderName] = useState("");
 
   const handlePayment = async () => {
-    if (
-      !cardNumber ||
-      !cvvNumber ||
-      !expiryMonth ||
-      !expiryYear ||
-      !cardHolderName
-    ) {
-      alert("Please fill all fields");
-      return;
-    }
+  // =========================
+  // BASIC EMPTY FIELD CHECK
+  // =========================
+  if (
+    !cardNumber ||
+    !cvvNumber ||
+    !expiryMonth ||
+    !expiryYear ||
+    !cardHolderName
+  ) {
+    alert("Please fill all fields");
+    return;
+  }
 
-    try {
-      const bookingData = JSON.parse(sessionStorage.getItem("bookingData"));
+  // =========================
+  // CARD NUMBER VALIDATION
+  // =========================
+  const cleanCardNumber = cardNumber.replace(/\s/g, "");
 
-      const result = await axios.post("http://localhost:3001/email/send-otp", {
+  if (!/^\d{16}$/.test(cleanCardNumber)) {
+    alert("Card number must be exactly 16 digits");
+    return;
+  }
+
+  // =========================
+  // CVV VALIDATION
+  // =========================
+  if (!/^\d{3}$/.test(cvvNumber)) {
+    alert("CVV must be exactly 3 digits");
+    return;
+  }
+
+  // =========================
+  // EXPIRY MONTH VALIDATION
+  // =========================
+  const month = Number(expiryMonth);
+
+  if (month < 1 || month > 12 || !/^\d{1,2}$/.test(expiryMonth)) {
+    alert("Expiry month must be between 01 and 12");
+    return;
+  }
+
+  // =========================
+  // EXPIRY YEAR VALIDATION
+  // =========================
+  const year = Number(expiryYear);
+
+  if (!/^\d{2}$/.test(expiryYear)) {
+    alert("Expiry year must be 2 digits");
+    return;
+  }
+
+  // Current date
+  const today = new Date();
+
+  const currentYear = today.getFullYear() % 100;
+  const currentMonth = today.getMonth() + 1;
+
+  // =========================
+  // CHECK EXPIRED CARD
+  // =========================
+  if (
+    year < currentYear ||
+    (year === currentYear && month < currentMonth)
+  ) {
+    alert("Card has expired");
+    return;
+  }
+
+  // =========================
+  // SEND OTP
+  // =========================
+  try {
+    const bookingData = JSON.parse(
+      sessionStorage.getItem("bookingData")
+    );
+
+    const result = await axios.post(
+      "http://localhost:3001/email/send-otp",
+      {
         email: bookingData.email,
-      });
-
-      if (result.data.status === "OTP sent successfully") {
-        navigate("/otpverification", {
-          state: {
-            email: bookingData.email,
-          },
-        });
-      } else {
-        alert(result.data.status);
       }
-    } catch (err) {
-      console.log(err);
-      console.log(err.response?.data);
+    );
 
-      alert("Failed to send OTP");
+    if (result.data.status === "OTP sent successfully") {
+      navigate("/otpverification", {
+        state: {
+          email: bookingData.email,
+        },
+      });
+    } else {
+      alert(result.data.status);
     }
-  };
+
+  } catch (err) {
+    console.log(err);
+    console.log(err.response?.data);
+
+    alert("Failed to send OTP");
+  }
+};
   console.log(bookingData);
 
 const [plan, setPlan] = useState([]);
@@ -221,10 +288,11 @@ console.log("User Plan:", userPlan);
                   ))}
                 </ul>
 
-                <NavLink to="/paymentscreen" className="plan-buttons">
-                  Get {item.planname} Plan
-                  <button onClick={handlePayment}>Pay Subscription</button>
-                </NavLink>
+                <button 
+                  className="plan-buttons"
+                  onClick={handlePayment}>
+                    Pay Subscription
+                </button>
               </motion.div>
             ))}
           </div>

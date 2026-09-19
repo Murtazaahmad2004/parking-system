@@ -246,10 +246,6 @@
     color: #ffffff;
 }
 
-.pay-subscribe-btn:active {
-    transform: scale(0.98);
-}
-
 .pay-subscribe-btn .pay-icon {
     font-size: 16px;
     color: inherit;

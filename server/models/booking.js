@@ -41,7 +41,6 @@ const BookingFormSchema = new mongoose.Schema({
   slot: {
     type: String,
     required: true,
-    unique:true,
   },
   area: {
     type: String,
@@ -70,6 +69,11 @@ const BookingFormSchema = new mongoose.Schema({
   endtime: {
     type: String,
     required: true,
+  },
+  status: {
+    type : String,
+    enum: ["active", "cancelled", "completed"],
+    default: "active",
   },
 });
  

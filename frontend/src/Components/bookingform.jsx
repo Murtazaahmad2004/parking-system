@@ -291,18 +291,6 @@ function BookingForm() {
                   </li>
                 </NavLink>
               </motion.div>
-
-              <motion.div
-                variants={fadeUp}
-                whileHover={{ x: 10 }} // Hover karne pe element 10px right move karega
-              >
-                <NavLink to="/paymentscreen" className="user-nav-item">
-                  <li>
-                    <FaCalendarCheck className="icon" />
-                    payment
-                  </li>
-                </NavLink>
-              </motion.div>
             </motion.ul>
           </motion.div>
         </div>
@@ -403,28 +391,15 @@ function BookingForm() {
                   <option value="truck">Truck</option>
                 </select>
 
-                <label htmlFor="slot">Choose Slot:</label>
-                <select
-                  id="slot"
-                  name="slot"
-                  value={slot}
-                  onChange={(e) => setSlot(e.target.value)}
-                  required
-                >
-                  <option value="">Select Slot</option>
-                  {slots.map((slot) => (
-                    <option key={slot._id} value={slot.slot}>
-                      {slot.slot}
-                    </option>
-                  ))}
-                </select>
-
                 <label htmlFor="area">Parking Area:</label>
                 <select
                   id="area"
                   name="area"
                   value={area}
-                  onChange={(e) => setArea(e.target.value)}
+                  onChange={(e) => {
+                    setArea(e.target.value);
+                    setSlot("");
+                  }}
                   required
                 >
                   <option value="">Select Area</option>
@@ -432,6 +407,35 @@ function BookingForm() {
                   <option value="groundfloor">Ground Floor</option>
                   <option value="firstfloor">First Floor</option>
                   <option value="secondfloor">Second Floor</option>
+                </select>
+                
+                <label htmlFor="slot">Choose Slot:</label>
+                <select
+                  id="slot"
+                  name="slot"
+                  value={slot}
+                  onChange={(e) => setSlot(e.target.value)}
+                  required
+                  disabled={!area}
+                >
+                  <option value="">
+                    {area ? "Select Slot" : "First Select Area"}
+                  </option>
+
+                  {slots
+                    .filter(
+                    (item) =>
+                      item.area === area &&
+                      item.available === true
+                    )
+                    .map((item) => (
+                      <option
+                        key={`${item.area}-${item.slot}`}
+                        value={item.slot}
+                      >
+                        {item.slot}
+                      </option>
+                    ))}
                 </select>
 
                 <label htmlFor="plan">Choose Plan:</label>

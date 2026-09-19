@@ -119,35 +119,8 @@ app.post("/login", async (req, res) => {
 // ---------- BOOKING FORM ----------
 app.post("/bookingform", async (req, res) => {
   try {
-    const { userid } = req.body;
-    const now = new Date();
-
-    const currentDate = now.toISOString().split("T")[0];
-    const currentTime = now.toTimeString().slice(0, 5);
-
-    const existingBooking = await BookingForm.findOne({
-      userid,
-      // $or means dono me se koi bhi ek condition true ho
-      // 1st condition true ho gi to 2nd check ho gi
-      $or: [
-        {
-          enddate: { $gt: currentDate }
-        },
-
-        {
-          enddate: currentDate,
-          endtime: { $gt: currentTime }
-        }
-      ]
-    });
-
-    if (existingBooking) {
-      return res.status(400).json({
-        message: "You already have an active booking. Please wait until it expires."
-      });
-    }
-
     const {
+      userid,
       bookingid,
       name,
       email,
@@ -164,6 +137,102 @@ app.post("/bookingform", async (req, res) => {
       bookingtime,
       endtime,
     } = req.body;
+
+    // =========================
+    // CHECK REQUIRED FIELDS
+    // =========================
+
+    if (
+      !userid ||
+      !bookingid ||
+      !name ||
+      !email ||
+      !cnic ||
+      !phonenumber ||
+      !vehiclenumber ||
+      !vehicletype ||
+      !slot ||
+      !area ||
+      !plan ||
+      !price ||
+      !bookingdate ||
+      !enddate ||
+      !bookingtime ||
+      !endtime
+    ) {
+      return res.status(400).json({
+        message: "Please fill all fields",
+      });
+    }
+
+    // =========================
+    // CURRENT DATE & TIME
+    // =========================
+
+    const now = new Date();
+
+    // =========================
+    // CHECK USER ACTIVE BOOKING
+    // =========================
+
+    const userBookings = await BookingForm.find({
+      userid,
+      status: "active",
+    });
+
+    for (const booking of userBookings) {
+      const bookingEnd = new Date(
+        `${booking.enddate}T${booking.endtime}`
+      );
+
+      if (bookingEnd <= now) {
+        await BookingForm.findOneAndUpdate(
+          {
+            bookingid: booking.bookingid,
+          },
+          {
+            status: "completed",
+          }
+        );
+      }
+    }
+
+    // =========================
+    // CHECK USER STILL HAS ACTIVE BOOKING
+    // =========================
+
+    const existingUserBooking = await BookingForm.findOne({
+      userid,
+      status: "active",
+    });
+
+    if (existingUserBooking) {
+      return res.status(400).json({
+        message:
+          "You already have an active booking. Please wait until it expires.",
+      });
+    }
+
+    // =========================
+    // CHECK SLOT + AREA
+    // =========================
+
+    const existingSlotBooking = await BookingForm.findOne({
+      slot: slot,
+      area: area,
+      status: "active",
+    });
+
+    if (existingSlotBooking) {
+      return res.status(400).json({
+        message:
+          `Slot ${slot} is already booked in ${area}. Please select another slot.`,
+      });
+    }
+
+    // =========================
+    // CREATE BOOKING
+    // =========================
 
     const bookingform = await BookingForm.create({
       userid,
@@ -182,27 +251,26 @@ app.post("/bookingform", async (req, res) => {
       enddate,
       bookingtime,
       endtime,
+      status: "active",
     });
 
-    await Slot.findOneAndUpdate(
-      { slot },
-      { 
-        status: "booked"
-      }
-    );
+    // =========================
+    // RESPONSE
+    // =========================
 
     return res.json({
       status: "Success",
       bookingform,
     });
-  } catch(err){
+
+  } catch (err) {
 
     console.log(err);
 
     return res.status(500).json({
-        error: err.message
+      error: err.message,
     });
-}
+  }
 });
 
 // ---------- ADD STAFF ----------
@@ -286,13 +354,79 @@ app.get("/plans", async (req, res) => {
 
 app.get("/slots", async (req, res) => {
   try {
-    const slots = await Slot.find({
-      status: "available"
+    // Database se saare slots lao
+    const slots = await Slot.find();
+
+    // Parking areas
+    const areas = [
+      "basement",
+      "groundfloor",
+      "firstfloor",
+      "secondfloor",
+    ];
+
+    // Current date/time
+    const now = new Date();
+
+    // Sirf active bookings lao
+    const activeBookings = await BookingForm.find({
+      status: "active",
     });
-    
-    res.json(slots);
+
+    // Expired bookings ko completed karo
+    for (const booking of activeBookings) {
+      const bookingEnd = new Date(
+        `${booking.enddate}T${booking.endtime}`
+      );
+
+      if (bookingEnd <= now) {
+        await BookingForm.findOneAndUpdate(
+          { bookingid: booking.bookingid },
+          { status: "completed" }
+        );
+      }
+    }
+
+    // Expired bookings update hone ke baad
+    // fresh active bookings dobara lao
+    const currentBookings = await BookingForm.find({
+      status: "active",
+    });
+
+    // Final result
+    const result = [];
+
+    // Har area ke andar har slot check karo
+    for (const area of areas) {
+      for (const slot of slots) {
+
+        // Check karo kya SAME slot
+        // SAME area mein already booked hai
+        const isBooked = currentBookings.some(
+          (booking) =>
+            booking.slot === slot.slot &&
+            booking.area === area
+        );
+
+        // Result mein slot + area + availability bhejo
+        result.push({
+          slot: slot.slot,
+          area: area,
+          available: !isBooked,
+        });
+      }
+    }
+
+    // Frontend ko result bhejo
+    res.json(result);
+
   } catch (err) {
-    res.status(500).json(err);
+    console.log("SLOTS ERROR:", err);
+
+    res.status(500).json({
+      message: "Failed to fetch slots",
+      error: err.message,
+    });
   }
 });
 
@@ -368,9 +502,14 @@ app.delete("/booking/:bookingid", async (req, res) => {
       { status: "available" }
     );
 
-    await BookingForm.findOneAndUpdate({
-      bookingid: req.params.bookingid,
-    });
+    await BookingForm.findOneAndUpdate(
+      {
+        bookingid: req.params.bookingid,
+      },
+      {
+        status: "cancelled",
+      }
+    );
     
     res.json({
       status: "Success",

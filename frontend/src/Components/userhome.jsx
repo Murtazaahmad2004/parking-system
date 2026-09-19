@@ -48,7 +48,7 @@ function UserHome() {
   const [open, setOpen] = useState(false);
   const [user, setUser] = useState("");
   const [booking, setBooking] = useState("");
-  const [data, setData] =useState([])
+  const [data, setData] = useState([]);
   const [stats, setStats] = useState({
     totalSlots: 0,
     availableSlots: 0,
@@ -123,20 +123,20 @@ function UserHome() {
     });
   };
   // Graphs
-  // const bardata = [
-  //   { month: "January", profit: 500},
-  //   { month: "February", profit: 1000},
-  //   { month: "March", profit: 1500},
-  //   { month: "April", profit: 2000},
-  //   { month: "May", profit: 3300},
-  //   { month: "June", profit: 4500},
-  //   { month: "July", profit: 5000},
-  // ];
   const donutdata = [
-    { name: "available", value: 38 },
-    { name: "booked", value: 7 },
+    { name: "Available", value: stats.availableSlots },
+    { name: "Booked", value: stats.bookedSlots },
   ];
-  const colors = ["#28a745", "#ffc107"];
+  const colors = [
+  "#22C55E",
+  "#3B82F6",
+  "#A855F7",
+  "#F97316",
+  "#EF4444",
+  "#06B6D4",
+  "#EAB308",
+  "#EC4899",
+];
   return (
     <>
       {/* HEADER AND NAVIGATION */}
@@ -339,12 +339,14 @@ function UserHome() {
               <YAxis />
               <Tooltip /> {/* Hover pe popup show karta hai */}
               <Legend /> {/* Chart labels show karta hai */}
-                <Bar
-                  dataKey="price"
-                  fill="#22C55E"
-                  stroke="#22C55E"
-                  strokeWidth={2}
-                />
+                <Bar dataKey="price" strokeWidth={2}>
+                  {data.map((item, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={colors[index % colors.length]}
+                    />
+                  ))}
+                </Bar>
             </BarChart>
           </motion.div>
 
