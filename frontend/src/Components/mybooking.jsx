@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import axios from "axios";
 import { NavLink, useNavigate } from "react-router-dom";
+import QRCode from "qrcode";
+import html2canvas from "html2canvas";
 import "./styling/mybooking.css";
 import {
   FaCalendarCheck,
@@ -11,6 +13,7 @@ import {
   FaSignOutAlt,
 } from "react-icons/fa";
 import { MdCancel, MdDashboard } from "react-icons/md";
+
 
 const fadeUp = {
   hidden: { opacity: 0, y: 60 },
@@ -55,19 +58,180 @@ function MyBooking() {
     }
   }, []);
 
-  const cancelBooking = async (bookingid) => {
-    try {
-      await axios.delete(`http://localhost:3001/booking/${bookingid}`);
-      setBookings (
-        bookings.filter (
-          b => b.bookingid!==bookingid
-        )
-      );
-    } catch (err) {
-      console.log(err);
-    }
+const cancelBooking = async (bookingid) => {
+  try {
+    const result = await axios.delete(
+      `http://localhost:3001/booking/${bookingid}`
+    );
+
+    console.log(result.data);
+
+    setBookings((prevBookings) =>
+      prevBookings.map((booking) =>
+        booking.bookingid === bookingid
+          ? {
+              ...booking,
+              status: "cancelled",
+            }
+          : booking
+      )
+    );
+
+  } catch (err) {
+    console.log("Cancel Booking Error:", err);
   }
+};
   
+const downloadTicket = async (booking) => {
+  let holder = null;
+ 
+  try {
+    /* ---------- 1. QR data ---------- */
+    const qrData = {
+      userid: booking.userid,
+      bookingid: booking.bookingid,
+      name: booking.name,
+      vehiclenumber: booking.vehiclenumber,
+      vehicletype: booking.vehicletype,
+      slot: booking.slot,
+      area: booking.area,
+      plan: booking.plan,
+      price: booking.price,
+      bookingdate: booking.bookingdate,
+      bookingtime: booking.bookingtime,
+      enddate: booking.enddate,
+      endtime: booking.endtime,
+      status: booking.status,
+    };
+ 
+    const qrUrl = await QRCode.toDataURL(JSON.stringify(qrData), {
+      width: 420,
+      margin: 1,
+    });
+ 
+    /* ---------- 2. Ticket ke rows (label : value) ---------- */
+    const rows = [
+      ["User ID", booking.userid],
+      ["Booking ID", booking.bookingid],
+      ["Booking Date", `${booking.bookingdate}  ${booking.bookingtime || ""}`],
+      ["Ending Date", `${booking.enddate}  ${booking.endtime || ""}`],
+      ["Parking Area", booking.area],
+      ["Slot Number", booking.slot],
+      ["Plan", booking.plan],
+      ["Name", booking.name],
+      ["Phone", booking.phonenumber],
+      ["CNIC", booking.cnic],
+      ["Vehicle No.", booking.vehiclenumber],
+      ["Vehicle Type", booking.vehicletype],
+      ["Status", booking.status],
+      ["Price", `Rs. ${booking.price}`],
+    ];
+ 
+    const rowsHTML = rows
+      .map(
+        ([label, value]) => `
+        <div style="display:flex;justify-content:space-between;gap:16px;
+                    padding:9px 2px;border-bottom:1px solid #d8d8d8;font-size:15px;">
+          <span style="color:#111111;">${label}:</span>
+          <span style="font-weight:600;color:#111111;text-align:right;">${
+            value ?? "--"
+          }</span>
+        </div>`
+      )
+      .join("");
+ 
+    /* ---------- 3. Hidden ticket DOM (off-screen, screenshot ke liye) ---------- */
+    holder = document.createElement("div");
+    holder.style.position = "fixed";
+    holder.style.left = "-10000px";
+    holder.style.top = "0";
+ 
+    holder.innerHTML = `
+      <div id="pf-ticket" style="width:520px;background:#ffffff;padding:28px 30px 34px;
+           font-family:Arial,Helvetica,sans-serif;color:#111111;box-sizing:border-box;">
+ 
+        <!-- HEADER -->
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="width:48px;height:48px;border-radius:50%;background:#0b6b3a;color:#ffffff;
+                      font-size:18px;font-weight:700;line-height:48px;text-align:center;">PF</div>
+          <div style="font-size:24px;font-weight:700;color:#0b6b3a;letter-spacing:.5px;">
+            ParkFlow
+          </div>
+        </div>
+ 
+        <!-- TITLE -->
+        <div style="text-align:center;margin:22px 0 4px;font-size:19px;font-weight:600;">
+          Parking Booking Ticket
+        </div>
+        <div style="text-align:center;font-size:13px;color:#666666;margin-bottom:18px;">
+          Smart Parking Reservation Receipt
+        </div>
+ 
+        <!-- SLOT LINE -->
+        <div style="text-align:center;margin-bottom:18px;">
+          <div style="font-size:17px;font-weight:600;">Slot ${booking.slot}</div>
+          <div style="font-size:15px;color:#333333;">${booking.area}</div>
+        </div>
+ 
+        <!-- ROWS -->
+        <div style="border-top:1px solid #d8d8d8;">${rowsHTML}</div>
+ 
+        <!-- NOTES -->
+        <div style="margin-top:18px;font-size:12px;line-height:1.6;color:#555555;">
+          <div>Entry ke waqt ye QR code security ko scan karwana zaroori hai.</div>
+          <div>Booking sirf upar diye gaye vehicle ke liye valid hai.</div>
+          <div>Ticket transferable nahi hai.</div>
+        </div>
+ 
+        <!-- QR -->
+        <div style="text-align:center;margin-top:20px;">
+          <img id="pf-qr" src="${qrUrl}" width="180" height="180"
+               style="border:1px solid #d8d8d8;" />
+          <div style="margin-top:8px;font-size:13px;letter-spacing:.5px;color:#333333;">
+            ${booking.bookingid}
+          </div>
+        </div>
+ 
+        <div style="margin-top:18px;font-size:11.5px;color:#999999;text-align:center;">
+          Generated ${new Date().toLocaleString()}
+        </div>
+        <div style="margin-top:6px;font-size:13px;color:#333333;text-align:center;">
+          Online Ticket
+        </div>
+      </div>
+    `;
+ 
+    document.body.appendChild(holder);
+ 
+    /* ---------- 4. QR image fully load hone ka wait ---------- */
+    const qrImg = holder.querySelector("#pf-qr");
+    if (!qrImg.complete) {
+      await new Promise((res) => {
+        qrImg.onload = res;
+        qrImg.onerror = res;
+      });
+    }
+ 
+    /* ---------- 5. Poore ticket ka screenshot -> PNG ---------- */
+    const canvas = await html2canvas(holder.querySelector("#pf-ticket"), {
+      scale: 2,
+      backgroundColor: "#ffffff",
+      useCORS: true,
+    });
+ 
+    const link = document.createElement("a");
+    link.href = canvas.toDataURL("image/png");
+    link.download = `ParkFlow-Ticket-${booking.bookingid}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } catch (error) {
+    console.log("Ticket Download Error:", error);
+  } finally {
+    if (holder) document.body.removeChild(holder);
+  }
+};
+
   const handleLogout = () => {
     sessionStorage.removeItem("isLoggedIn");
     sessionStorage.removeItem("role");
@@ -213,6 +377,7 @@ function MyBooking() {
                 <th>Booking Time</th>
                 <th>Ending Date</th>
                 <th>Ending Time</th>
+                <th>Status</th>
                 <th>QR Code</th>
               </tr>
             </thead>
@@ -223,7 +388,7 @@ function MyBooking() {
               {/* index current item ka number ha */}
               {bookings.map((booking, index) => (
                 <tr key={booking._id}>
-                  <td>{index + 1}</td> {/* ✅ Auto Sr.No */}
+                  <td>{index + 1}</td>
                   <td>{booking.userid}</td>
                   <td>{booking.bookingid}</td>
                   <td>{booking.name}</td>
@@ -239,8 +404,13 @@ function MyBooking() {
                   <td>{booking.bookingtime}</td>
                   <td>{booking.enddate}</td>
                   <td>{booking.endtime}</td>
+                  <td>{booking.status}</td>
                   <td>
-                    <button className="vehical-button-primary btn-primary">
+                    <button 
+                      className="vehical-button-primary btn-primary"
+                      onClick={() => downloadTicket(booking)}
+                      title="Download QR Code"
+                    >
                       <FaCloudDownloadAlt className="icon" />
                     </button>
                     <button

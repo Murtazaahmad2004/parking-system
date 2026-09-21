@@ -1,25 +1,47 @@
 require("dotenv").config();
-const express = require("express"); // Express ek framework hai jo server banana bahut aasaan kar deta hai.
-const mongoose = require("mongoose"); // Ye MongoDB ko use karne ke liye hai Mongoose ek bridge hai.
-const cors = require("cors"); // Frontend ko backend se request bhejne ki permission hai
+
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+
 const SignupModel = require("./models/signup");
 const LoginHistory = require("./models/loginhistory");
 const BookingForm = require("./models/booking");
 const AddStaff = require("./models/addstaff");
-const slotRoutes = require("./routes/slotRoutes");
 const Plan = require("./models/plan");
 const Slot = require("./models/slot");
-const bcrypt = require("bcryptjs");
+
+const slotRoutes = require("./routes/slotRoutes");
 const emailRoutes = require("./routes/emailRoutes");
 
-const app = express(); //Express ko use karke application banai ja rahi hai.
-app.use(express.json()); // Frontend say data JSON format ma send krna
-app.use(cors()); // Request aur Response ke beech chalne wala function.
+const bcrypt = require("bcryptjs");
 
-mongoose.connect("mongodb://localhost:27017/parkflow");
+const app = express();
 
-// ==================== Routes ====================
-// ---------- SIGN UP ----------
+// ================================
+// MIDDLEWARE
+// ================================
+
+app.use(express.json());
+app.use(cors());
+
+// ================================
+// MONGODB CONNECTION
+// ================================
+
+mongoose
+  .connect("mongodb://localhost:27017/parkflow")
+  .then(() => {
+    console.log("MongoDB connected successfully");
+  })
+  .catch((err) => {
+    console.log("MongoDB connection error:", err);
+  });
+
+// ================================
+// SIGN UP
+// ================================
+
 app.post("/signup", async (req, res) => {
   try {
     const { userid, name, email, password } = req.body;
@@ -30,7 +52,9 @@ app.post("/signup", async (req, res) => {
       });
     }
 
-    const existingUser = await SignupModel.findOne({ email });
+    const existingUser = await SignupModel.findOne({
+      email,
+    });
 
     if (existingUser) {
       return res.json({
@@ -38,7 +62,7 @@ app.post("/signup", async (req, res) => {
       });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10)
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await SignupModel.create({
       userid,
@@ -52,17 +76,18 @@ app.post("/signup", async (req, res) => {
       user,
     });
   } catch (err) {
+    console.log(err);
+
     res.status(500).json(err);
   }
 });
 
-// ---------- LOGIN ----------
-// async function ka use kiya gaya hai kyunki database se data fetch karna time-consuming ho
-// sakta hai aur hum chahte hain ki server is process ke complete hone tak wait kare.
+// ================================
+// LOGIN
+// ================================
 
 app.post("/login", async (req, res) => {
   try {
-
     const pakistanDate = new Date().toLocaleString("sv-SE", {
       timeZone: "Asia/Karachi",
     });
@@ -75,7 +100,9 @@ app.post("/login", async (req, res) => {
       });
     }
 
-    const user = await SignupModel.findOne({ email });
+    const user = await SignupModel.findOne({
+      email,
+    });
 
     if (!user) {
       return res.json({
@@ -85,14 +112,14 @@ app.post("/login", async (req, res) => {
 
     const isMatch = await bcrypt.compare(password, user.password);
 
-
     if (!isMatch) {
       return res.json({
         status: "Invalid Email Password",
       });
     }
 
-    // ---------- LOGIN HISTORY ----------
+    // LOGIN HISTORY
+
     await LoginHistory.create({
       userid: user.userid,
       name: user.name,
@@ -104,6 +131,7 @@ app.post("/login", async (req, res) => {
 
     res.json({
       status: "Success",
+
       user: {
         userid: user.userid,
         name: user.name,
@@ -112,11 +140,16 @@ app.post("/login", async (req, res) => {
       },
     });
   } catch (err) {
+    console.log(err);
+
     res.status(500).json(err);
   }
 });
 
-// ---------- BOOKING FORM ----------
+// ================================
+// BOOKING FORM
+// ================================
+
 app.post("/bookingform", async (req, res) => {
   try {
     const {
@@ -139,7 +172,7 @@ app.post("/bookingform", async (req, res) => {
     } = req.body;
 
     // =========================
-    // CHECK REQUIRED FIELDS
+    // REQUIRED FIELDS
     // =========================
 
     if (
@@ -166,13 +199,13 @@ app.post("/bookingform", async (req, res) => {
     }
 
     // =========================
-    // CURRENT DATE & TIME
+    // CURRENT DATE
     // =========================
 
     const now = new Date();
 
     // =========================
-    // CHECK USER ACTIVE BOOKING
+    // USER ACTIVE BOOKINGS
     // =========================
 
     const userBookings = await BookingForm.find({
@@ -180,10 +213,12 @@ app.post("/bookingform", async (req, res) => {
       status: "active",
     });
 
+    // =========================
+    // COMPLETE EXPIRED BOOKINGS
+    // =========================
+
     for (const booking of userBookings) {
-      const bookingEnd = new Date(
-        `${booking.enddate}T${booking.endtime}`
-      );
+      const bookingEnd = new Date(`${booking.enddate}T${booking.endtime}`);
 
       if (bookingEnd <= now) {
         await BookingForm.findOneAndUpdate(
@@ -192,13 +227,13 @@ app.post("/bookingform", async (req, res) => {
           },
           {
             status: "completed",
-          }
+          },
         );
       }
     }
 
     // =========================
-    // CHECK USER STILL HAS ACTIVE BOOKING
+    // CHECK ACTIVE USER BOOKING
     // =========================
 
     const existingUserBooking = await BookingForm.findOne({
@@ -214,7 +249,7 @@ app.post("/bookingform", async (req, res) => {
     }
 
     // =========================
-    // CHECK SLOT + AREA
+    // CHECK SLOT BOOKING
     // =========================
 
     const existingSlotBooking = await BookingForm.findOne({
@@ -225,8 +260,7 @@ app.post("/bookingform", async (req, res) => {
 
     if (existingSlotBooking) {
       return res.status(400).json({
-        message:
-          `Slot ${slot} is already booked in ${area}. Please select another slot.`,
+        message: `Slot ${slot} is already booked in ${area}. Please select another slot.`,
       });
     }
 
@@ -251,6 +285,7 @@ app.post("/bookingform", async (req, res) => {
       enddate,
       bookingtime,
       endtime,
+
       status: "active",
     });
 
@@ -260,11 +295,10 @@ app.post("/bookingform", async (req, res) => {
 
     return res.json({
       status: "Success",
+
       bookingform,
     });
-
   } catch (err) {
-
     console.log(err);
 
     return res.status(500).json({
@@ -273,7 +307,10 @@ app.post("/bookingform", async (req, res) => {
   }
 });
 
-// ---------- ADD STAFF ----------
+// ================================
+// ADD STAFF
+// ================================
+
 app.post("/addstaff", async (req, res) => {
   try {
     const { staffid, name, email, role, salary, cnic, phone, age } = req.body;
@@ -288,19 +325,26 @@ app.post("/addstaff", async (req, res) => {
       phone,
       age,
     });
+
     res.json({
       status: "Success",
+
       addstaff,
     });
   } catch (err) {
+    console.log(err);
+
     res.status(500).json(err);
   }
 });
 
+// ================================
 // ADD NEW PLAN
+// ================================
+
 app.post("/plan", async (req, res) => {
   try {
-    const {  planname, price, features, duration, durationtype,  } = req.body;
+    const { planname, price, features, duration, durationtype } = req.body;
 
     const plan = await Plan.create({
       planname,
@@ -309,146 +353,299 @@ app.post("/plan", async (req, res) => {
       duration,
       durationtype,
     });
+
     res.json({
       status: "Success",
+
       plan,
     });
   } catch (err) {
-    res.status(500).json(err)
+    console.log(err);
+
+    res.status(500).json(err);
   }
 });
 
-// ---------- GET BOOKINGS ----------
+// ================================
+// GET BOOKINGS
+// ================================
+
 app.get("/bookings", async (req, res) => {
   try {
     const bookings = await BookingForm.find();
+
     res.json(bookings);
   } catch (err) {
+    console.log(err);
+
     res.status(500).json(err);
   }
 });
 
-// ---------- GET STAFF ----------
+// ================================
+// GET STAFF
+// ================================
+
 app.get("/addstaff", async (req, res) => {
   try {
     const staff = await AddStaff.find();
+
     res.json(staff);
   } catch (err) {
+    console.log(err);
+
     res.status(500).json(err);
   }
 });
 
-// ---------- GET ROUTES ----------
+// ================================
+// SLOT ROUTES
+// ================================
+
 app.use("/api", slotRoutes);
 
+// ================================
+// EMAIL ROUTES
+// ================================
+
 app.use("/email", emailRoutes);
+
+// ================================
+// GET PLANS
+// ================================
 
 app.get("/plans", async (req, res) => {
   try {
     const plans = await Plan.find();
+
     res.json(plans);
   } catch (err) {
+    console.log(err);
+
     res.status(500).json(err);
   }
 });
 
+// =====================================================
+// GET SLOTS
+// =====================================================
+
 app.get("/slots", async (req, res) => {
   try {
-    // Database se saare slots lao
-    const slots = await Slot.find();
+    // ================================
+    // GET SELECTED AREA
+    // ================================
 
-    // Parking areas
-    const areas = [
-      "basement",
-      "groundfloor",
-      "firstfloor",
-      "secondfloor",
-    ];
+    const { area } = req.query;
 
-    // Current date/time
+    // ================================
+    // CURRENT DATE & TIME
+    // ================================
+
     const now = new Date();
 
-    // Sirf active bookings lao
+    // ================================
+    // GET ACTIVE BOOKINGS
+    // ================================
+
     const activeBookings = await BookingForm.find({
       status: "active",
     });
 
-    // Expired bookings ko completed karo
+    // ================================
+    // COMPLETE EXPIRED BOOKINGS
+    // ================================
+
     for (const booking of activeBookings) {
-      const bookingEnd = new Date(
-        `${booking.enddate}T${booking.endtime}`
-      );
+      const bookingEnd = new Date(`${booking.enddate}T${booking.endtime}`);
 
       if (bookingEnd <= now) {
         await BookingForm.findOneAndUpdate(
-          { bookingid: booking.bookingid },
-          { status: "completed" }
+          {
+            bookingid: booking.bookingid,
+          },
+
+          {
+            status: "completed",
+          },
         );
       }
     }
 
-    // Expired bookings update hone ke baad
-    // fresh active bookings dobara lao
+    // ================================
+    // GET FRESH ACTIVE BOOKINGS
+    // ================================
+
     const currentBookings = await BookingForm.find({
       status: "active",
     });
 
-    // Final result
-    const result = [];
+    // ================================
+    // GET ALL 100 SLOTS
+    // ================================
 
-    // Har area ke andar har slot check karo
-    for (const area of areas) {
-      for (const slot of slots) {
+    const slots = await Slot.find().sort({
+      slot: 1,
+    });
 
-        // Check karo kya SAME slot
-        // SAME area mein already booked hai
-        const isBooked = currentBookings.some(
-          (booking) =>
-            booking.slot === slot.slot &&
-            booking.area === area
-        );
+    // ================================
+    // FILTER SLOTS ACCORDING TO AREA
+    // ================================
 
-        // Result mein slot + area + availability bhejo
-        result.push({
-          slot: slot.slot,
-          area: area,
-          available: !isBooked,
-        });
-      }
+    let filteredSlots = [];
+
+    // -------------------------------
+    // BASEMENT
+    // A1 - A25
+    // -------------------------------
+
+    if (area === "basement") {
+      filteredSlots = slots.filter((slot) => {
+        const match = slot.slot.match(/^A([0-9]+)$/);
+
+        if (!match) {
+          return false;
+        }
+
+        const number = Number(match[1]);
+
+        return number >= 1 && number <= 25;
+      });
     }
 
-    // Frontend ko result bhejo
-    res.json(result);
+    // -------------------------------
+    // GROUND FLOOR
+    // B1 - B25
+    // -------------------------------
+    else if (area === "groundfloor") {
+      filteredSlots = slots.filter((slot) => {
+        const match = slot.slot.match(/^B([0-9]+)$/);
 
+        if (!match) {
+          return false;
+        }
+
+        const number = Number(match[1]);
+
+        return number >= 1 && number <= 25;
+      });
+    }
+
+    // -------------------------------
+    // FIRST FLOOR
+    // C1 - C25
+    // -------------------------------
+    else if (area === "firstfloor") {
+      filteredSlots = slots.filter((slot) => {
+        const match = slot.slot.match(/^C([0-9]+)$/);
+
+        if (!match) {
+          return false;
+        }
+
+        const number = Number(match[1]);
+
+        return number >= 1 && number <= 25;
+      });
+    }
+
+    // -------------------------------
+    // SECOND FLOOR
+    // D1 - D25
+    // -------------------------------
+    else if (area === "secondfloor") {
+      filteredSlots = slots.filter((slot) => {
+        const match = slot.slot.match(/^D([0-9]+)$/);
+
+        if (!match) {
+          return false;
+        }
+
+        const number = Number(match[1]);
+
+        return number >= 1 && number <= 25;
+      });
+    }
+
+    // ================================
+    // NO AREA SELECTED
+    // ================================
+    else {
+      filteredSlots = [];
+    }
+
+    // ================================
+    // NATURAL ASCENDING ORDER
+    // ================================
+
+    filteredSlots.sort((a, b) => {
+      const numA = parseInt(a.slot.slice(1), 10);
+      const numB = parseInt(b.slot.slice(1), 10);
+
+      return numA - numB;
+    });
+
+    // ================================
+    // CHECK AVAILABILITY
+    // ================================
+
+    const result = filteredSlots.map((slot) => {
+      const isBooked = currentBookings.some(
+        (booking) => booking.slot === slot.slot && booking.area === area,
+      );
+
+      return {
+        slot: slot.slot,
+
+        available: !isBooked,
+      };
+    });
+
+    // ================================
+    // RESPONSE
+    // ================================
+
+    res.json(result);
   } catch (err) {
     console.log("SLOTS ERROR:", err);
 
     res.status(500).json({
       message: "Failed to fetch slots",
+
       error: err.message,
     });
   }
 });
 
+// ================================
+// GET SINGLE BOOKING
+// ================================
+
 app.get("/booking/:userid", async (req, res) => {
   try {
     const { userid } = req.params;
 
-    const bookings = await BookingForm.findOne({ userid });
+    const bookings = await BookingForm.findOne({
+      userid,
+    });
 
-    if(!bookings) {
+    if (!bookings) {
       return res.status(404).json({
         message: "Booking Not Found",
       });
     }
-    
-    res.json(bookings);
 
+    res.json(bookings);
   } catch (err) {
     console.log(err);
+
     res.status(500).json(err);
   }
 });
+
+// ================================
+// GET ALL USER BOOKINGS
+// ================================
 
 app.get("/mybookings/:userid", async (req, res) => {
   try {
@@ -457,72 +654,89 @@ app.get("/mybookings/:userid", async (req, res) => {
     });
 
     res.json(bookings);
-
   } catch (err) {
     console.log(err);
+
     res.status(500).json(err);
   }
 });
 
+// ================================
+// BOOKED SLOTS
+// ================================
+
 app.get("/booked-slots", async (req, res) => {
   try {
     const totalSlots = await Slot.countDocuments();
-    const bookedSlots = await BookingForm.countDocuments();
+
+    const bookedSlots = await BookingForm.countDocuments({
+      status: "active",
+    });
 
     const availableSlots = totalSlots - bookedSlots;
 
     res.json({
       totalSlots,
+
       bookedSlots,
+
       availableSlots,
     });
   } catch (err) {
     console.log(err);
+
     res.status(500).json({
       message: "Server Error",
     });
   }
 });
 
-// DELETE ROUTES 
+// ================================
+// CANCEL BOOKING
+// ================================
+
 app.delete("/booking/:bookingid", async (req, res) => {
   try {
     const booking = await BookingForm.findOne({
       bookingid: req.params.bookingid,
     });
 
-    if(!booking) {
+    if (!booking) {
       return res.status(404).json({
-        message: "Booking Not Found."
+        message: "Booking Not Found.",
       });
     }
-
-    await Slot.findOneAndUpdate(
-      { slot: booking.slot },
-      { status: "available" }
-    );
 
     await BookingForm.findOneAndUpdate(
       {
         bookingid: req.params.bookingid,
       },
+
       {
         status: "cancelled",
-      }
+      },
     );
-    
+
     res.json({
       status: "Success",
+
       message: "Booking Cancelled",
     });
-
   } catch (err) {
+    console.log(err);
+
     res.status(500).json({
-      err: err.message,
+      status: "Error",
+
+      message: err.message,
     });
   }
 });
 
+// ================================
+// SERVER
+// ================================
+
 app.listen(3001, () => {
-  console.log("server is running");
+  console.log("Server is running on port 3001");
 });
