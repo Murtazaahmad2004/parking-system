@@ -31,23 +31,4 @@ router.get("/slots", async (req, res) => {
   }
 });
 
-// Get total slots count
-router.get("/slots/count", async (req, res) => {
-  try {
-    const totalSlots = await Slot.countDocuments();
-    const availableSlots = await Slot.countDocuments({
-      status: "available"
-    });
-
-    res.json({
-      totalSlots,
-      availableSlots,
-    });
-  } catch (err) {
-    res.status(500).json({
-      message: err.message,
-    });
-  }
-});
-
 module.exports = router;

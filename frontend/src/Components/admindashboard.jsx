@@ -84,12 +84,8 @@ const scrollToTop = () => {
 };
 
 function AdminDashboard() {
-  // const [totalSlots, setTotalSlots] = useState(0);
-  // const [availableSlots, setAvailableSlots] = useState(0);
-  // const [stats, setStats] = useState({
-  //   bookedSlots: 0,
-  // });
-
+   const [bookings, setBookings] = useState([]);
+   const [totalrevenue, setTotalRevenue] = useState(0);
    const [stats, setStats] = useState({
       totalSlots: 0,
       availableSlots: 0,
@@ -98,16 +94,6 @@ function AdminDashboard() {
 
   useEffect(() => {
     document.title = "Admin || Dashboard - ParkFlow";
-
-    axios
-      .get("http://localhost:3001/api/slots/count")
-      .then((res) => {
-        setStats(res.data.stats.totalSlots);
-        setStats(res.data.stats.availableSlots);
-      })
-      .catch((err) => {
-        console.log(err);
-      });
   }, []);
 
   useEffect(() => {
@@ -120,6 +106,32 @@ function AdminDashboard() {
         console.log(err);
       });
   }, []);
+
+  useEffect(() => {
+    axios
+    .get("http://localhost:3001/bookings")
+    .then((result) => {
+      console.log("All Bookings:", result.data);
+      
+      if(Array.isArray(result.data)) {
+        setBookings(result.data);
+      } else {
+        setBookings([]);
+      }
+    })
+    .catch((err) => {
+      console.log(err);
+      setBookings([]);
+    });
+  }, []);
+
+  useEffect(() => {
+  const revenue = bookings.reduce((total, booking) => {
+    return total + Number(booking?.price || 0);
+  }, 0);
+
+  setTotalRevenue(revenue);
+}, [bookings]);
 
   const navigate = useNavigate();
 
@@ -295,7 +307,7 @@ function AdminDashboard() {
               </div>
               <div className="stat-info">
                 <p className="stat-label">Total Revenue</p>
-                <h3 className="stat-number">PKR 12,000</h3>
+                <h3 className="stat-number">RS.{totalrevenue}</h3>
                 <p className="stat-sub">Total Revenue</p>
               </div>
             </motion.div>
