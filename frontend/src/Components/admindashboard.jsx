@@ -23,6 +23,7 @@ import {
   Pie,
   Cell,
   Bar,
+  CartesianGrid,
 } from "recharts"; // Dashboard graphs banane ke liye.
 import { NavLink, useNavigate } from "react-router-dom";
 import React, { useEffect, useState } from "react";
@@ -56,14 +57,6 @@ const vehicalentries = [
   { date: "10-may-2026", vehicals: 25 },
   { date: "15-may-2026", vehicals: 30 },
 ];
-const revenuedata = [
-  { month: "Jan", profit: 15000 },
-  { month: "Feb", profit: 20000 },
-  { month: "Mar", profit: 12000 },
-  { month: "Apr", profit: 18000 },
-  { month: "May", profit: 25000 },
-  { month: "Jun", profit: 30000 },
-];
 const vehicaltype = [
   { type: "Car", count: 15 },
   { type: "Bike", count: 20 },
@@ -71,10 +64,7 @@ const vehicaltype = [
   { type: "Van", count: 18 },
   { type: "Bus", count: 25 },
 ];
-const donutdata = [
-  { name: "available", value: 38 },
-  { name: "booked", value: 7 },
-];
+
 const colors = ["#28a745", "#ffc107", "#007bff"];
 const scrollToTop = () => {
   window.scrollTo({
@@ -141,6 +131,34 @@ function AdminDashboard() {
 
     navigate("/loginsignup");
   };
+
+  const chartData = Object.values (
+  bookings.reduce((result, booking) => {
+    const month = new Date(booking.bookingdate).toLocaleString("en-US", {
+      month: "short",
+    });
+
+    const price = Number(booking.price || 0);
+
+    if(!result[month]) {
+      result[month] = {
+        month: month,
+        price: 0,
+      };
+    }
+    result[month].price += price;
+
+    return result;
+  }, [])
+ );
+    
+  console.log("Chart Data JSON:", JSON.stringify(chartData, null, 2));
+
+  const donutdata = [
+    { name: "available", value: stats.availableSlots },
+    { name: "booked", value: stats.bookedSlots },
+  ];
+
   return (
     <>
       {/* HEADER AND NAVIGATION */}
@@ -373,29 +391,25 @@ function AdminDashboard() {
             whileHover={{ scale: 1.02 }} // Hover karne pe element 1.02px zoom hoga
           >
             <h3>Monthly / Yearly Profit</h3>
-            <LineChart width={900} height={350} data={revenuedata}>
-              <XAxis dataKey="month" />
-              <YAxis dataKey="profit" />
-              <Tooltip />
-              {/* Hover pe popup show karta hai */}
-              <Legend />
-              {/* Chart labels show karta hai */}
-              <Line
-                type="monotone"
-                dataKey="month"
-                stroke="#185FA5"
-                strokeWidth={2}
-                dot={{ r: 4 }}
-              />
-              <Line
-                type="monotone"
-                dataKey="profit"
-                stroke="#0fa80a"
-                strokeWidth={2}
-                dot={{ r: 4 }}
-              />
-              {/* monotone smooth curved line banata hai. or strokewidth line ki width ko show krta ha or dot r dot ki width ki show krta ha */}
+            <ResponsiveContainer width="100%" height={350}>
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis/>
+                  <Tooltip />
+                  {/* Hover pe popup show karta hai */}
+                  <Legend />
+                  {/* Chart labels show karta hai */}
+                  <Line
+                    type="monotone"
+                    dataKey="price"
+                    stroke="#185FA5"
+                    strokeWidth={2}
+                    dot={{ r: 4 }}
+                  />
+                  {/* monotone smooth curved line banata hai. or strokewidth line ki width ko show krta ha or dot r dot ki width ki show krta ha */}
             </LineChart>
+            </ResponsiveContainer>
           </motion.div>
           {/* end monthly and yearly graph */}
 
