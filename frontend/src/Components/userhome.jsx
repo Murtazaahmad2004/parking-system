@@ -64,24 +64,24 @@ function UserHome() {
       .then((result) => {
         setStats(result.data);
       })
-      .catch ((err) => {
+      .catch((err) => {
         console.log(err);
       });
   }, []);
 
   useEffect(() => {
     const userid = sessionStorage.getItem("userid");
-  axios
-    .get(`http://localhost:3001/booking/${userid}`)
-    .then((result) => {
-      setBooking(result.data);
-    })
-    .catch((err) => console.log(err));
-}, []);
+    axios
+      .get(`http://localhost:3001/booking/${userid}`)
+      .then((result) => {
+        setBooking(result.data);
+      })
+      .catch((err) => console.log(err));
+  }, []);
 
   useEffect(() => {
     const userid = sessionStorage.getItem("userid");
-    if(!userid) {
+    if (!userid) {
       console.log("User ID not found in sessionStorage");
       return;
     }
@@ -102,7 +102,7 @@ function UserHome() {
   useEffect(() => {
     const loggedInUser = JSON.parse(sessionStorage.getItem("user"));
 
-    if(loggedInUser) {
+    if (loggedInUser) {
       setUser(loggedInUser);
     }
   }, []);
@@ -128,15 +128,15 @@ function UserHome() {
     { name: "Booked", value: stats.bookedSlots },
   ];
   const colors = [
-  "#22C55E",
-  "#3B82F6",
-  "#A855F7",
-  "#F97316",
-  "#EF4444",
-  "#06B6D4",
-  "#EAB308",
-  "#EC4899",
-];
+    "#22C55E",
+    "#3B82F6",
+    "#A855F7",
+    "#F97316",
+    "#EF4444",
+    "#06B6D4",
+    "#EAB308",
+    "#EC4899",
+  ];
   return (
     <>
       {/* HEADER AND NAVIGATION */}
@@ -180,23 +180,23 @@ function UserHome() {
                 </div>
                 <hr />
                 <motion.div
-                variants={fadeUp}
-                whileHover={{ x: 10 }} // Hover karne pe element 10px right move karega
-              >
-                <NavLink
-                  to="/loginsignup"
-                  className="user-nav-item"
-                  onClick={() => {
-                    scrollToTop();
-                    handleLogout();
-                  }}
+                  variants={fadeUp}
+                  whileHover={{ x: 10 }} // Hover karne pe element 10px right move karega
                 >
-                  <li>
-                    <FaSignOutAlt className="icon" />
-                    Logout
-                  </li>
-                </NavLink>
-              </motion.div>
+                  <NavLink
+                    to="/loginsignup"
+                    className="user-nav-item"
+                    onClick={() => {
+                      scrollToTop();
+                      handleLogout();
+                    }}
+                  >
+                    <li>
+                      <FaSignOutAlt className="icon" />
+                      Logout
+                    </li>
+                  </NavLink>
+                </motion.div>
               </div>
             )}
           </div>
@@ -339,14 +339,14 @@ function UserHome() {
               <YAxis />
               <Tooltip /> {/* Hover pe popup show karta hai */}
               <Legend /> {/* Chart labels show karta hai */}
-                <Bar dataKey="price" strokeWidth={2}>
-                  {data.map((item, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={colors[index % colors.length]}
-                    />
-                  ))}
-                </Bar>
+              <Bar dataKey="price" strokeWidth={2}>
+                {data.map((item, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={colors[index % colors.length]}
+                  />
+                ))}
+              </Bar>
             </BarChart>
           </motion.div>
 
@@ -384,7 +384,6 @@ function UserHome() {
             </ResponsiveContainer>
           </motion.div>
         </motion.div>
-
       </div>
       {/* FOOTER */}
       <footer className="login-footer">
