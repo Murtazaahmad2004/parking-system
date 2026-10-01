@@ -143,19 +143,23 @@ function AdminDashboard() {
   // Corrected property fallback mapping to catch 'vehicaltype', 'vehicleType', or 'type'
   const vehicalTypes = Object.values(
     bookings.reduce((result, booking) => {
-      const vehicaltype =
-        booking.vehicaltype || booking.vehicleType || booking.type || "Other";
+      const vehicletype = booking.vehicletype;
 
-      if (!result[vehicaltype]) {
-        result[vehicaltype] = {
-          type: vehicaltype,
+      if (!vehicletype) {
+        return result;
+      }
+
+      if (!result[vehicletype]) {
+        result[vehicletype] = {
+          type: vehicletype,
           vehicals: 0,
         };
       }
-      result[vehicaltype].vehicals += 1;
+
+      result[vehicletype].vehicals += 1;
 
       return result;
-    }, []),
+    }, {}),
   );
 
   const donutdata = [
@@ -171,16 +175,11 @@ function AdminDashboard() {
     navigate("/loginsignup");
   };
 
-  const colors = [
-    "#22C55E",
-    "#3B82F6",
-    "#A855F7",
-    "#F97316",
-    "#EF4444",
-    "#06B6D4",
-    "#EAB308",
-    "#EC4899",
-  ];
+  const getSliceColor = (index, total) => {
+    const hue = (index * 360) / total;
+
+    return `hsl(${hue}, 70%, 55%)`;
+  };
 
   return (
     <>
@@ -424,8 +423,11 @@ function AdminDashboard() {
                   dataKey="value"
                   label
                 >
-                  {donutdata.map((curitem, i) => (
-                    <Cell key={i} fill={colors[i]} />
+                  {donutdata.map((item, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={getSliceColor(index, donutdata.length)}
+                    />
                   ))}
                 </Pie>
                 <Tooltip />
@@ -450,7 +452,7 @@ function AdminDashboard() {
                 {vehicalEntries.map((item, index) => (
                   <Cell
                     key={`cell-${index}`}
-                    fill={colors[index % colors.length]}
+                    fill={getSliceColor(index, vehicalEntries.length)}
                   />
                 ))}
               </Bar>
@@ -464,6 +466,7 @@ function AdminDashboard() {
             whileHover={{ scale: 1.02 }}
           >
             <h3 className="chart-title">Vehicle Types</h3>
+
             <ResponsiveContainer width="100%" height={290}>
               <PieChart>
                 <Pie
@@ -479,7 +482,7 @@ function AdminDashboard() {
                   {vehicalTypes.map((item, index) => (
                     <Cell
                       key={`cell-${index}`}
-                      fill={colors[index % colors.length]}
+                      fill={getSliceColor(index, vehicalTypes.length)}
                     />
                   ))}
                 </Pie>
